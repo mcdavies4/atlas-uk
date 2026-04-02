@@ -1,60 +1,101 @@
-// ─── Abuja Zone Map ──────────────────────────────────────────────────────────
-// Zones grouped by proximity to Central Abuja
+// ─── London Zone Map ─────────────────────────────────────────────────────────
+// Based on TfL zone logic and common London delivery corridors
 
 const ZONES = {
   central: {
-    label: 'Central',
-    areas: ['central area', 'area 1', 'area 2', 'area 3', 'area 7', 'area 8', 'area 10', 'area 11', 'garki', 'asokoro', 'maitama', 'wuse', 'wuse 2', 'wuse zone', 'jabi', 'utako', 'cadastral zone'],
+    label: 'Central London',
+    areas: [
+      'city of london', 'ec1', 'ec2', 'ec3', 'ec4',
+      'wc1', 'wc2', 'w1', 'sw1', 'se1',
+      'shoreditch', 'clerkenwell', 'holborn', 'covent garden',
+      'westminster', 'soho', 'mayfair', 'fitzrovia',
+      'southwark', 'borough', 'bermondsey', 'waterloo',
+      'canary wharf', 'e14', 'victoria', 'pimlico',
+      'london bridge', 'aldgate', 'barbican', 'moorgate',
+      "king's cross", 'euston', 'angel', 'farringdon',
+    ],
   },
   inner: {
-    label: 'Inner',
-    areas: ['life camp', 'gwarinpa', 'kado', 'games village', 'nbora', 'duboyi', 'lokogoma', 'galadimawa', 'apo', 'gudu', 'karu', 'mararaba', 'nyanya'],
+    label: 'Inner London',
+    areas: [
+      'hackney', 'e8', 'e9', 'e2', 'e3',
+      'islington', 'n1', 'n4', 'n5', 'n7',
+      'camden', 'nw1', 'nw3', 'nw5',
+      'brixton', 'sw2', 'sw9', 'sw4',
+      'peckham', 'se15', 'se5', 'se17',
+      'lewisham', 'se13', 'se4',
+      'greenwich', 'se10', 'se8',
+      'whitechapel', 'e1', 'stepney',
+      'bethnal green', 'clapham', 'sw11', 'sw8',
+      'battersea', 'hammersmith', 'w6', 'w14',
+      "shepherd's bush", 'w12',
+      'kensington', 'w8', 'w11', 'notting hill',
+      'fulham', 'sw6', 'sw10',
+      'putney', 'sw15',
+      'tooting', 'sw17', 'sw16',
+      'streatham', 'deptford', 'se14',
+      'new cross', 'walthamstow', 'e17',
+      'leyton', 'e10', 'e11',
+      'stratford', 'e15', 'e20',
+      'west ham', 'e13', 'poplar',
+    ],
   },
   outer: {
-    label: 'Outer',
-    areas: ['kubwa', 'lugbe', 'gwagwalada', 'zuba', 'bwari', 'kuje', 'abaji', 'airport', 'pyakasa', 'masaka', 'karshi'],
+    label: 'Outer London',
+    areas: [
+      'croydon', 'cr0', 'cr7', 'bromley', 'br1', 'br2',
+      'enfield', 'en1', 'en2', 'en3',
+      'barnet', 'n11', 'n12', 'n14', 'n20',
+      'harrow', 'ha1', 'ha2', 'ha3',
+      'ealing', 'w5', 'w7', 'w13',
+      'hounslow', 'tw3', 'tw4', 'tw5',
+      'richmond', 'tw9', 'tw10',
+      'kingston', 'kt1', 'kt2',
+      'wimbledon', 'sw19', 'sw20',
+      'sutton', 'sm1', 'sm2',
+      'ilford', 'ig1', 'ig2', 'ig3',
+      'romford', 'rm1', 'rm2',
+      'barking', 'ig11', 'dagenham', 'rm8', 'rm9',
+      'woolwich', 'se18', 'eltham', 'se9',
+      'sidcup', 'da14', 'da15',
+      'bexleyheath', 'da6', 'da7',
+      'wembley', 'ha9', 'edgware', 'ha8',
+      'finchley', 'n3', 'wood green', 'n22',
+      'tottenham', 'n17', 'n15',
+      'chingford', 'e4', 'woodford', 'e18', 'ig8',
+    ],
   },
 };
 
-// ─── Pricing Matrix (₦) ─────────────────────────────────────────────────────
-
-// Pricing updated based on real Bolt motorbike data (Abuja, April 2026)
-// Bolt Send Motorbike rates used as market benchmark, Atlas priced slightly below
 const PRICING = {
   central: {
-    central: { base: 2500, label: 'Within Central Abuja' },
-    inner:   { base: 4000, label: 'Central → Inner' },
-    outer:   { base: 6000, label: 'Central → Outer' },
+    central: { base: 8,  label: 'Within Central London' },
+    inner:   { base: 12, label: 'Central to Inner London' },
+    outer:   { base: 18, label: 'Central to Outer London' },
   },
   inner: {
-    central: { base: 4000, label: 'Inner → Central' },
-    inner:   { base: 4000, label: 'Within Inner Zone' },
-    outer:   { base: 5000, label: 'Inner → Outer' },
+    central: { base: 12, label: 'Inner to Central London' },
+    inner:   { base: 10, label: 'Within Inner London' },
+    outer:   { base: 15, label: 'Inner to Outer London' },
   },
   outer: {
-    central: { base: 6000, label: 'Outer → Central' },
-    inner:   { base: 5000, label: 'Outer → Inner' },
-    outer:   { base: 3500, label: 'Within Outer Zone' },
+    central: { base: 18, label: 'Outer to Central London' },
+    inner:   { base: 15, label: 'Outer to Inner London' },
+    outer:   { base: 12, label: 'Within Outer London' },
   },
 };
 
-// ─── Item size multipliers ───────────────────────────────────────────────────
-
 const SIZE_MULTIPLIER = {
-  small:       1.0,
-  medium:      1.3,
-  large:       1.8,
-  'extra-large': 2.5,
+  small:         1.0,
+  medium:        1.3,
+  large:         1.7,
+  'extra-large': 2.2,
 };
-
-// ─── Urgency multiplier ──────────────────────────────────────────────────────
 
 const URGENCY_MULTIPLIER = {
   standard: 1.0,
-  express:  1.5,
+  express:  1.4,
 };
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
 
 function detectZone(location) {
   if (!location) return null;
@@ -64,45 +105,37 @@ function detectZone(location) {
       return zoneKey;
     }
   }
-  // Default to inner if we can't place it — conservative estimate
   return 'inner';
 }
-
-// ─── Main pricing function ───────────────────────────────────────────────────
 
 async function estimatePrice(details) {
   const { pickup, dropoff, itemSize = 'small', urgency = 'standard' } = details;
 
-  const pickupZone = detectZone(pickup) || 'inner';
+  const pickupZone  = detectZone(pickup)  || 'inner';
   const dropoffZone = detectZone(dropoff) || 'inner';
 
-  const matrix = PRICING[pickupZone][dropoffZone];
-  const sizeMulti = SIZE_MULTIPLIER[itemSize] || 1.0;
+  const matrix       = PRICING[pickupZone][dropoffZone];
+  const sizeMulti    = SIZE_MULTIPLIER[itemSize]   || 1.0;
   const urgencyMulti = URGENCY_MULTIPLIER[urgency] || 1.0;
 
   const rawEstimate = matrix.base * sizeMulti * urgencyMulti;
-  // Round to nearest 100
-  const estimate = Math.round(rawEstimate / 100) * 100;
+  const estimate    = Math.round(rawEstimate * 2) / 2; // round to nearest 50p
 
   return {
     estimate,
-    zone: matrix.label,
+    zone:     matrix.label,
     pickupZone,
     dropoffZone,
     distance: getDistanceLabel(pickupZone, dropoffZone),
     itemSize,
     urgency,
+    currency: 'GBP',
   };
 }
 
 function getDistanceLabel(from, to) {
-  if (from === to) {
-    if (from === 'central') return 'short distance';
-    return 'same zone';
-  }
-  if ((from === 'central' && to === 'outer') || (from === 'outer' && to === 'central')) {
-    return 'long distance';
-  }
+  if (from === to) return from === 'central' ? 'short distance' : 'same zone';
+  if ((from === 'central' && to === 'outer') || (from === 'outer' && to === 'central')) return 'long distance';
   return 'medium distance';
 }
 

@@ -1,40 +1,43 @@
 -- ============================================================
--- ATLAS — Supabase Database Schema
+-- ATLAS UK — Supabase Database Schema (London)
 -- Run this in your Supabase SQL editor
 -- ============================================================
 
--- Enable UUID extension
 create extension if not exists "pgcrypto";
 
--- ─── RIDERS ─────────────────────────────────────────────────────────────────
+-- ─── RIDERS ──────────────────────────────────────────────────────────────────
 create table if not exists riders (
-  id              uuid primary key default gen_random_uuid(),
-  name            text not null,
-  phone           text not null unique,          -- WhatsApp number e.g. 2348012345678
-  company         text,                          -- Company name or null for independent
-  zone            text not null,                 -- Primary zone: central / inner / outer
-  coverage_zones  text[] default '{}',           -- All zones they cover
-  is_available    boolean default true,
-  rating          numeric(2,1) default 5.0,
-  verified        boolean default false,         -- Admin must verify before they appear
-  notes           text,
-  created_at      timestamptz default now(),
-  updated_at      timestamptz default now()
+  id                    uuid primary key default gen_random_uuid(),
+  name                  text not null,
+  phone                 text not null unique,
+  company               text,
+  zone                  text not null,             -- central / inner / outer
+  coverage_zones        text[] default '{}',
+  vehicle_type          text default 'motorbike',  -- motorbike / bicycle / car / van
+  hire_reward_insurance boolean default false,     -- UK legal requirement for paid deliveries
+  is_available          boolean default true,
+  rating                numeric(2,1) default 5.0,
+  verified              boolean default false,     -- Admin must verify insurance before listing
+  notes                 text,
+  created_at            timestamptz default now(),
+  updated_at            timestamptz default now()
 );
 
--- ─── DELIVERIES ─────────────────────────────────────────────────────────────
+-- ─── DELIVERIES ──────────────────────────────────────────────────────────────
 create table if not exists deliveries (
-  id               uuid primary key default gen_random_uuid(),
-  sender_phone     text not null,
-  pickup_address   text not null,
-  dropoff_address  text not null,
-  item_description text,
-  item_size        text default 'small',         -- small / medium / large / extra-large
-  estimated_price  integer default 0,            -- in Naira
-  rider_id         uuid references riders(id),
-  status           text default 'pending',       -- pending / accepted / in_transit / delivered / cancelled
-  created_at       timestamptz default now(),
-  updated_at       timestamptz default now()
+  id                uuid primary key default gen_random_uuid(),
+  sender_phone      text not null,
+  pickup_address    text not null,
+  dropoff_address   text not null,
+  item_description  text,
+  item_size         text default 'small',
+  estimated_price   numeric(8,2) default 0,       -- in GBP
+  rider_id          uuid references riders(id),
+  status            text default 'pending',        -- pending / accepted / in_transit / delivered / cancelled
+  channel           text default 'whatsapp',       -- whatsapp / telegram
+  sender_type       text default 'individual',     -- individual / business
+  created_at        timestamptz default now(),
+  updated_at        timestamptz default now()
 );
 
 -- ─── SESSIONS ────────────────────────────────────────────────────────────────
@@ -45,35 +48,21 @@ create table if not exists sessions (
   last_active  timestamptz default now()
 );
 
--- ─── PRICING ZONES (optional — used if you want DB-driven pricing) ───────────
-create table if not exists pricing_zones (
-  id              uuid primary key default gen_random_uuid(),
-  from_zone       text not null,
-  to_zone         text not null,
-  base_rate_ngn   integer not null,
-  size_small      numeric default 1.0,
-  size_medium     numeric default 1.3,
-  size_large      numeric default 1.8,
-  size_xl         numeric default 2.5,
-  is_active       boolean default true,
-  unique (from_zone, to_zone)
-);
-
--- ─── INDEXES ────────────────────────────────────────────────────────────────
+-- ─── INDEXES ─────────────────────────────────────────────────────────────────
 create index if not exists idx_deliveries_sender  on deliveries(sender_phone);
 create index if not exists idx_deliveries_status  on deliveries(status);
 create index if not exists idx_deliveries_rider   on deliveries(rider_id);
 create index if not exists idx_riders_available   on riders(is_available, verified);
 create index if not exists idx_sessions_phone     on sessions(phone);
 
--- ─── SEED: Sample Abuja riders (for testing) ────────────────────────────────
-insert into riders (name, phone, company, zone, coverage_zones, is_available, rating, verified)
+-- ─── SEED: Sample London riders (for testing) ────────────────────────────────
+insert into riders (name, phone, company, zone, coverage_zones, vehicle_type, hire_reward_insurance, is_available, rating, verified)
 values
-  ('Emeka Dispatch',   '2348011111111', 'FastRun Abuja',     'central', '{"central","inner"}',  true, 4.8, true),
-  ('Tunde Express',    '2348022222222', null,                'inner',   '{"inner","outer"}',     true, 4.5, true),
-  ('Kelechi Logistics','2348033333333', 'AbujaMoto Courier', 'outer',   '{"outer","inner"}',     true, 4.7, true),
-  ('Aminu Rider',      '2348044444444', null,                'central', '{"central"}',           true, 4.2, true),
-  ('Chidi Swift',      '2348055555555', 'SwiftNG',           'central', '{"central","inner","outer"}', true, 4.9, true)
+  ('James Courier',    '447700000001', null,                  'central', '{"central","inner"}',         'bicycle',   true, 4.8, true),
+  ('Maria Express',    '447700000002', 'SpeedyLDN',           'inner',   '{"inner","central"}',         'motorbike', true, 4.7, true),
+  ('David Swift',      '447700000003', null,                  'outer',   '{"outer","inner"}',           'motorbike', true, 4.5, true),
+  ('Sophie Delivers',  '447700000004', 'LondonRuns Couriers', 'central', '{"central","inner","outer"}', 'car',       true, 4.9, true),
+  ('Kwame Dispatch',   '447700000005', null,                  'inner',   '{"inner","outer"}',           'motorbike', true, 4.6, true)
 on conflict (phone) do nothing;
 
 -- ─── UPDATED_AT TRIGGER ──────────────────────────────────────────────────────

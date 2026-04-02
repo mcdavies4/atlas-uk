@@ -1,7 +1,7 @@
-# Atlas UK 🚴
-**London same-day courier dispatch bot — WhatsApp & Telegram**
+# Atlas 🚀
+**Abuja's AI-powered WhatsApp logistics dispatch bot**
 
-Senders describe their delivery → Claude extracts details → Atlas estimates price in £ → connects them to a verified London courier.
+Senders describe their delivery in natural language → Claude extracts the details → Atlas estimates the price → connects them to a verified rider.
 
 ---
 
@@ -10,18 +10,8 @@ Senders describe their delivery → Claude extracts details → Atlas estimates 
 - **Framework**: Express
 - **AI**: Claude Sonnet (Anthropic)
 - **Database**: Supabase (Postgres)
-- **Channels**: WhatsApp Business Cloud API + Telegram Bot API
+- **Channel**: WhatsApp Business Cloud API (Meta)
 - **Hosting**: Railway
-
----
-
-## Key Differences from Nigeria Version
-- Pricing in £ (GBP) based on London zone benchmarks
-- London zone map (Central / Inner / Outer) using area names and postcodes
-- Hire & Reward insurance verification for riders (UK legal requirement)
-- UK-tone conversation flow
-- Business sender detection (restaurants, pharmacies, florists etc)
-- `channel` and `sender_type` fields tracked on every delivery
 
 ---
 
@@ -29,56 +19,116 @@ Senders describe their delivery → Claude extracts details → Atlas estimates 
 
 ### 1. Clone & install
 ```bash
+git clone <your-repo>
+cd atlas
 npm install
 cp .env.example .env
 ```
 
 ### 2. Supabase
-Run `supabase/migrations/001_initial_schema.sql` in your Supabase SQL editor.
+1. Create a new project at supabase.com
+2. Go to **SQL Editor** and run the full contents of `supabase/migrations/001_initial_schema.sql`
+3. Copy your **Project URL** and **service_role key** from Settings → API
 
-### 3. Fill .env
+### 3. WhatsApp Business API
+1. Go to [Meta for Developers](https://developers.facebook.com)
+2. Create an App → Add **WhatsApp** product
+3. Get your **Phone Number ID** and generate a **permanent access token**
+4. Set your verify token to match `WHATSAPP_VERIFY_TOKEN` in your `.env`
+
+### 4. Anthropic
+1. Get your API key from [console.anthropic.com](https://console.anthropic.com)
+
+### 5. Fill in .env
 ```
 WHATSAPP_PHONE_NUMBER_ID=...
 WHATSAPP_ACCESS_TOKEN=...
-WHATSAPP_VERIFY_TOKEN=atlas_uk_verify_token
-TELEGRAM_BOT_TOKEN=...
+WHATSAPP_VERIFY_TOKEN=atlas_webhook_verify_token_change_this
 ANTHROPIC_API_KEY=...
 SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
-### 4. Deploy to Railway
-Push to GitHub → new Railway project → add env vars → deploy.
+### 6. Deploy to Railway
+1. Push to GitHub
+2. New project on [railway.app](https://railway.app) → Deploy from GitHub repo
+3. Add all environment variables in Railway's Variables tab
+4. Copy your Railway public URL (e.g. `https://atlas-production.up.railway.app`)
 
-### 5. Register WhatsApp Webhook
-Webhook URL: `https://your-railway-url.up.railway.app/webhook`
-
-Telegram webhook is registered automatically on startup.
-
----
-
-## London Pricing (£)
-| Route | Price |
-|-------|-------|
-| Within Central London | £8 |
-| Central ↔ Inner London | £12 |
-| Central ↔ Outer London | £18 |
-| Within Inner London | £10 |
-| Inner ↔ Outer London | £15 |
-| Within Outer London | £12 |
-
-Size multipliers: Small ×1.0 · Medium ×1.3 · Large ×1.7 · XL ×2.2
-Express surcharge: ×1.4
+### 7. Register WhatsApp Webhook
+In Meta Developer Console:
+- Webhook URL: `https://your-railway-url.up.railway.app/webhook`
+- Verify token: same as `WHATSAPP_VERIFY_TOKEN`
+- Subscribe to: **messages**
 
 ---
 
-## Rider Requirements (UK)
-Riders must have **Hire & Reward insurance** before being verified.
-Set `hire_reward_insurance = true` and `verified = true` in the admin dashboard.
+## Project Structure
+```
+atlas/
+├── src/
+│   ├── index.js              # Express server entry point
+│   ├── bot/
+│   │   ├── webhook.js        # Meta webhook handler
+│   │   └── conversation.js   # State machine (IDLE → COLLECTING → CONFIRMING → SELECTING_RIDER)
+│   ├── ai/
+│   │   └── claude.js         # NLU extraction via Claude API
+│   ├── pricing/
+│   │   └── engine.js         # Zone-based Abuja pricing logic
+│   ├── riders/
+│   │   └── matcher.js        # Filter available riders by zone
+│   ├── jobs/
+│   │   └── manager.js        # Create + update delivery jobs in Supabase
+│   └── utils/
+│       ├── whatsapp.js       # Send WhatsApp messages
+│       ├── supabase.js       # Supabase client
+│       └── session.js        # Conversation state persistence
+└── supabase/
+    └── migrations/
+        └── 001_initial_schema.sql
+```
 
-## Rider WhatsApp Commands
-| Command | Action |
-|---------|--------|
-| `AVAILABLE` | Go online |
-| `OFFLINE` | Go offline |
-| `STATUS` | Check status |
+---
+
+## Conversation Flow
+```
+User: "Hi"
+Bot:  Welcome to Atlas! Tell me about your delivery...
+
+User: "Pick up a bag from Wuse 2, deliver to Gwarinpa"
+Bot:  ✅ Summary: Wuse 2 → Gwarinpa · Medium · ₦2,500 · Reply YES to continue
+
+User: "YES"
+Bot:  🏍️ Available riders: 1. Emeka Dispatch ⭐4.8 | 2. Chidi Swift ⭐4.9 ...
+
+User: "2"
+Bot:  🎉 Booked! Job ID: A3F2B1C0 · Contact Chidi: wa.me/2348055555555
+```
+
+---
+
+## Managing Riders
+Add riders directly in Supabase → `riders` table. Set `verified = true` for them to appear.
+
+**Coverage zones:** `central`, `inner`, `outer`, or `all`
+
+---
+
+## Pricing Zones (Abuja)
+| Zone     | Areas |
+|----------|-------|
+| Central  | Maitama, Wuse, Wuse 2, Garki, Asokoro, Jabi, Utako... |
+| Inner    | Gwarinpa, Life Camp, Kado, Lokogoma, Apo, Gudu, Karu, Nyanya... |
+| Outer    | Kubwa, Lugbe, Gwagwalada, Zuba, Airport Road... |
+
+Base rates: Central↔Central ₦1,500 · Central↔Inner ₦2,500 · Central↔Outer ₦4,000
+
+---
+
+## Phase 2 Roadmap
+- [ ] Rider availability toggle via WhatsApp command
+- [ ] Auto-broadcast jobs to riders (first to accept wins)
+- [ ] Admin web dashboard (React + Supabase)
+- [ ] Job status tracking + sender notifications
+- [ ] Paystack payment integration
+- [ ] Telegram channel support

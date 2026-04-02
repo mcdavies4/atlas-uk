@@ -1,5 +1,5 @@
 {
-  "name": "atlas-uk",
+  "name": "atlas",
   "version": "1.0.0",
   "description": "Atlas — Abuja AI logistics dispatch bot",
   "main": "src/index.js",

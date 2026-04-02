@@ -2,8 +2,8 @@ const { supabase } = require('../utils/supabase');
 const { sendMessage } = require('../utils/messenger');
 
 const RIDER_COMMANDS = {
-  AVAILABLE: ['available', 'online', 'i am available', 'start', 'open', 'active'],
-  OFFLINE:   ['offline', 'unavailable', 'stop', 'close', 'not available', 'done'],
+  AVAILABLE: ['available', 'online', 'i am available', 'start', 'open'],
+  OFFLINE:   ['offline', 'unavailable', 'stop', 'close', 'not available'],
   STATUS:    ['status', 'my status'],
 };
 
@@ -23,23 +23,18 @@ async function handleRiderCommand(phone, text, channel = 'whatsapp') {
     .single();
 
   if (error || !rider) {
-    await sendMessage(phone, `⚠️ Your number isn't registered as an Atlas courier. Please contact admin to get set up.`, channel);
+    await sendMessage(phone, `⚠️ Your number isn't registered as an Atlas rider. Contact admin to get added.`, channel);
     return true;
   }
 
   if (!rider.verified) {
-    await sendMessage(phone, `⏳ Your account is pending verification. Please contact admin.`, channel);
-    return true;
-  }
-
-  if (!rider.hire_reward_insurance) {
-    await sendMessage(phone, `⚠️ Your Hire & Reward insurance hasn't been verified yet. Please contact admin before going online.`, channel);
+    await sendMessage(phone, `⏳ Your account is pending verification. Contact admin.`, channel);
     return true;
   }
 
   if (isStatusCmd) {
     await sendMessage(phone,
-      `📊 *Your Atlas Status*\n\nName: ${rider.name}\nZone: ${rider.zone}\nVehicle: ${rider.vehicle_type}\nStatus: ${rider.is_available ? '🟢 Available' : '🔴 Offline'}\nRating: ⭐ ${rider.rating}`,
+      `📊 *Your Atlas Status*\n\nName: ${rider.name}\nZone: ${rider.zone}\nStatus: ${rider.is_available ? '🟢 Available' : '🔴 Offline'}\nRating: ⭐ ${rider.rating}`,
       channel
     );
     return true;
@@ -50,7 +45,7 @@ async function handleRiderCommand(phone, text, channel = 'whatsapp') {
 
   if (newStatus) {
     await sendMessage(phone,
-      `✅ You're now *Online* on Atlas.\n\nYou'll receive delivery jobs in *${rider.zone}* and surrounding areas.\n\nSend *OFFLINE* when you're done for the day.`,
+      `✅ You're now *Online* on Atlas.\n\nYou'll receive delivery jobs in *${rider.zone}* zone.\n\nSend *OFFLINE* when you're done for the day.`,
       channel
     );
   } else {
